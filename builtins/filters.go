@@ -29,6 +29,7 @@ var Filters = exec.FilterSet{
 	"attr":           filterAttr,
 	"batch":          filterBatch,
 	"capitalize":     filterCapitalize,
+	"align":          filterAlign,
 	"center":         filterCenter,
 	"d":              filterDefault,
 	"default":        filterDefault,
@@ -147,6 +148,38 @@ func filterCapitalize(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *
 	return exec.AsValue(strings.ToUpper(string(r)) + strings.ToLower(t[size:]))
 }
 
+func filterAlign(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	//p := params.ExpectArgs(1)
+	p := params.Expect(1, []*exec.KwArg{
+		{"align", "left"},
+		{"pad", " "},
+	})
+	width := p.First().Integer()
+	if p.IsError() {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'align'"))
+	}
+	str := in.String()
+	if in == nil {
+		str = ""
+	}
+	slen := len(str)
+	if width <= slen {
+		return in
+	}
+	align := p.KwArgs["align"].String()
+	pad := p.KwArgs["pad"].String()
+	spaces := width - slen
+	var left, right int
+	switch align {
+	case "left":
+		right = spaces
+	case "right":
+		left = spaces
+	}
+
+	return exec.AsValue(fmt.Sprintf("%s%s%s", strings.Repeat(pad, left),
+		in.String(), strings.Repeat(pad, right)))
+}
 func filterCenter(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
 	p := params.ExpectArgs(1)
 	if p.IsError() {
